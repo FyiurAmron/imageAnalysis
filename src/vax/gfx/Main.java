@@ -22,13 +22,15 @@ public class Main {
         Container cp = jf.getContentPane();
         //cp.setBackground( Color.BLACK );
         cp.setLayout( new BoxLayout( cp, BoxLayout.Y_AXIS ) );
-        JPanel jp1 = new JPanel(), jp2 = new JPanel();
+        JPanel jp1 = new JPanel(), jp2 = new JPanel(), jp3 = new JPanel();
         jp2.setBackground( Color.DARK_GRAY );
+        jp3.setBackground( Color.DARK_GRAY );
         cp.add( jp1 );
         cp.add( jp2 );
+        cp.add( jp3 );
         //jf.setLayout( new FlowLayout() );
 
-        HistoTest.testHisto( jp1, jp2 );
+        HistoTest.testHisto( jp1, jp2, jp3 );
 
         jf.pack();
         jf.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
