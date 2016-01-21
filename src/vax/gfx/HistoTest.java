@@ -209,7 +209,7 @@ public class HistoTest {
 
         Main.Counter cnt = new Main.Counter();
 
-        container2.add( new Main.VaxButton( "toggle", (ActionEvent t) -> {
+        container2.add( new Main.VaxButton( "reduce bits", (ActionEvent t) -> {
             Main.maskByteBuffer( bi, imgData, jbi1, 0xFF << cnt.next() );
             histoR.reset();
             histoG.reset();
@@ -258,5 +258,57 @@ public class HistoTest {
                 c.repaint();
             }
         } ) );
+
+        container2.add( new Main.VaxButton( "grayscale", (ActionEvent t) -> {
+            Main.IntTripletFunction avg = (a, b, c) -> ( a + b + c ) / 3;
+            Main.maskByteBuffer( bi, imgData, jbi1, avg, avg, avg );
+            histoR.reset();
+            histoG.reset();
+            histoB.reset();
+            histoGray.reset();
+            histoH.reset();
+            histoS.reset();
+            histoV.reset();
+            bb.rewind();
+            for( int i = 0, max = imgData.length; i < max; i++ ) {
+                byte r = bb.get(), g = bb.get(), b = bb.get();
+                int iR = Byte.toUnsignedInt( r ), iG = Byte.toUnsignedInt( g ), iB = Byte.toUnsignedInt( b );
+                histoR.count( iR );
+                histoG.count( iG );
+                histoB.count( iB );
+                histoGray.count( ( iR + iG + iB ) / 3 );
+                imgData[i] = packRGB( r, g, b );
+                Color.RGBtoHSB( iR, iG, iB, hsb );
+                histoH.count( (int) ( hsb[0] * 255 ) );
+                histoS.count( (int) ( hsb[1] * 255 ) );
+                histoV.count( (int) ( hsb[2] * 255 ) );
+                //hsb[0] = 0;
+                //hsb[1] = 0;
+                //hsb[2] = 0;
+                /*
+                 imgDataHSV[i] = ( ( (int) ( hsb[0] * 255 ) ) << 16 )
+                 | ( ( (int) ( hsb[1] * 255 ) ) << 8 )
+                 | ( (int) ( hsb[2] * 255 ) );
+                 */
+                imgDataHSV[i] = ( ( (int) ( hsb[1] * 255 ) ) & 0xFF );
+            }
+            int cntr = Math.max( histoR.getCounterMax(),
+                    Math.max( histoG.getCounterMax(), histoB.getCounterMax() ) );
+            histoR.updateImage( cntr );
+            histoG.updateImage( cntr );
+            histoB.updateImage( cntr );
+            histoGray.updateImage( cntr );
+            histoH.updateImage();
+            histoS.updateImage();
+            histoV.updateImage();
+            il1.repaint();
+            for( Component c : imageViews1 ) {
+                c.repaint();
+            }
+            for( Component c : imageViews2 ) {
+                c.repaint();
+            }
+        } ) );
+
     }
 }

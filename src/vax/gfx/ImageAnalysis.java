@@ -1,10 +1,35 @@
 package vax.gfx;
 
+import java.nio.ByteBuffer;
+
 /**
 
  @author toor
  */
 public class ImageAnalysis {
+    public static class Histogram {
+        public static float[] calcHistogram3 ( ByteBuffer bb, float[] output, int scanLength, int[] helper ) {
+            bb.rewind();
+            int total = bb.remaining();
+            HistoTest.fill( helper, 0 );
+            int scanLengthSq = scanLength * scanLength;
+
+            for( int i = 0; i < total; i++ ) {
+                byte a = bb.get(), b = bb.get(), c = bb.get(); // RGB actually
+                helper[a + scanLength * b + scanLengthSq * c]++;
+            }
+            float invTotal = 1.0f / total;
+            for( int i = helper.length - 1; i > 0; i-- ) {
+                output[i] = helper[i] * invTotal;
+            }
+            return output;
+        }
+    }
+
+    public static class Correlogram {
+
+    }
+
     public static class Distance {
         public static float calcManhattanDistance ( float[] v1, float[] v2 ) {
             int max = v1.length;
