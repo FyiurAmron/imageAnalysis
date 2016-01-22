@@ -11,7 +11,43 @@ import vax.gfx.ImageAnalysis.Distance;
  @author toor
  */
 public class MatchTest {
-    public static void testMatching ( String sourcePatternFilename, int searchCount, int bitsPerComponent ) throws IOException {
+    public static void calcHistogram ( ByteBuffer bb, double[] output, int possibleComponentValues, int[] rawCountOutput, int histMode ) {
+        switch ( histMode ) {
+            case 0:
+                ImageAnalysis.Histogram.calcHistogram3( bb, output, possibleComponentValues, rawCountOutput );
+                break;
+            case 1:
+                ImageAnalysis.Histogram.calcHistogramHSB3( bb, output, possibleComponentValues, rawCountOutput );
+                break;
+            case 2:
+                ImageAnalysis.Histogram.calcHistogramHue( bb, output, possibleComponentValues, rawCountOutput );
+                break;
+        }
+        throw new IllegalArgumentException();
+    }
+
+    public static double calcDistance ( double[] v1, double[] v2, int distMode ) {
+        switch ( distMode ) {
+            case 0:
+                return ImageAnalysis.Distance.calcManhattanDistance( v1, v2 );
+            case 1:
+                return ImageAnalysis.Distance.calcEuclideanDistance( v1, v2 );
+            case 2:
+                return ImageAnalysis.Distance.calcCosineDistance( v1, v2 );
+            case 3:
+                return ImageAnalysis.Distance.calcIntersection( v1, v2 );
+            case 4:
+                return ImageAnalysis.Distance.calcNormalizedCrossCorrelation( v1, v2 );
+            case 5:
+                return ImageAnalysis.Distance.calcKLDistance( v1, v2 );
+            case 6:
+                return ImageAnalysis.Distance.calcJeffreyDistance( v1, v2 );
+        }
+        throw new IllegalArgumentException();
+    }
+
+    public static void testMatching ( String sourcePatternFilename, int searchCount, int bitsPerComponent, int distMode, int histMode )
+            throws IOException {
         int possibleComponentValues = 1 << bitsPerComponent;
         int dim = possibleComponentValues * possibleComponentValues * possibleComponentValues;
         double[] output = new double[dim];
@@ -30,8 +66,7 @@ public class MatchTest {
                 (a, b, c) -> a >> ( 8 - bitsPerComponent ),
                 (a, b, c) -> b >> ( 8 - bitsPerComponent ),
                 (a, b, c) -> c >> ( 8 - bitsPerComponent ) ); // shift mask
-        ImageAnalysis.Histogram.calcHistogram3( bb, output, possibleComponentValues, helper );
-        //double[][] histograms = new double[searchCount][];
+        calcHistogram( bb, output, possibleComponentValues, helper, histMode );
         double[] distances = new double[searchCount];
         for( int i = 0; i < searchCount; i++ ) {
             BufferImage bi2;
@@ -47,9 +82,10 @@ public class MatchTest {
                     (a, b, c) -> a >> ( 8 - bitsPerComponent ),
                     (a, b, c) -> b >> ( 8 - bitsPerComponent ),
                     (a, b, c) -> c >> ( 8 - bitsPerComponent ) ); // shift mask
-            double[] out = new double[dim];
-            ImageAnalysis.Histogram.calcHistogram3( bb2, out, possibleComponentValues, helper );
-            distances[i] = Distance.calcManhattanDistance( out, output );
+            double[] out2 = new double[dim];
+            calcHistogram( bb2, out2, possibleComponentValues, helper, histMode );
+            ImageAnalysis.Histogram.calcHistogram3( bb2, out2, possibleComponentValues, helper );
+            distances[i] = calcDistance( output, out2, distMode );
         }
         double distMin = Double.POSITIVE_INFINITY;
         int distMinI = -1;

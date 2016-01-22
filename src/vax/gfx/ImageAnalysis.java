@@ -136,10 +136,11 @@ public class ImageAnalysis {
 
          @param bb
          @param output
+         @param scanLength
          @param rawCountOutput
          @return
          */
-        public static double[] calcHistogramHSB3 ( ByteBuffer bb, double[] output, int[] rawCountOutput ) {
+        public static double[] calcHistogramHue ( ByteBuffer bb, double[] output, int scanLength, int[] rawCountOutput ) {
             bb.rewind();
             int total = bb.remaining();
             HistoTest.fill( rawCountOutput, 0 );
@@ -150,7 +151,7 @@ public class ImageAnalysis {
                         b = Byte.toUnsignedInt( bb.get() ),
                         c = Byte.toUnsignedInt( bb.get() ); // RGB actually
                 Color.RGBtoHSB( a, b, c, hsb );
-                output[(int) ( hsb[0] * 255 )]++;
+                output[(int) ( hsb[0] * scanLength )]++;
             }
             double invTotal = 1.0f / total;
             for( int i = rawCountOutput.length - 1; i > 0; i-- ) {

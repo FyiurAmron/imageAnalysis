@@ -1,6 +1,5 @@
 package vax.gfx;
 
-import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.function.Consumer;
 import javax.swing.*;
@@ -17,40 +16,37 @@ public class Main {
      @throws java.lang.Exception
      */
     public static void main ( String[] args ) throws Exception {
-        boolean histoTest = false;
-
         if ( args.length == 0 ) {
-            histoTest = true;
-            args = new String[]{ "img/test2.png", /* "1000" */ "13", "4" };
-        }
-        if ( histoTest ) {
             appFrame = new JFrame( "imageAnalysis" );
             controlFrame = new JFrame( "controls" );
             histoFrame = new JFrame( "histograms" );
 
-            HistoTest.testHisto( args[0], appFrame, histoFrame, controlFrame );
+            HistoTest.testHisto( "img/test2.png", appFrame, histoFrame, controlFrame );
 
             appFrame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
             appFrame.setVisible( true );
 
             histoFrame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-            histoFrame.setVisible(true);
+            histoFrame.setVisible( true );
 
             controlFrame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
             controlFrame.setAlwaysOnTop( true );
             controlFrame.setVisible( true );
-        } else {
-            if ( args.length < 3 ) {
-                System.out.println( "not enough parameters!" );
-                return;
-            }
-
-            String sourcePatternFilename = args[0];
-            int searchCount = Integer.valueOf( args[1] );
-            int bitsPerComponent = Integer.valueOf( args[2] );
-
-            MatchTest.testMatching( sourcePatternFilename, searchCount, bitsPerComponent );
+            return;
         }
+
+        if ( args.length < 3 ) {
+            System.out.println( "not enough parameters!" );
+            return;
+        }
+
+        String sourcePatternFilename = args[0];
+        int searchCount = Integer.valueOf( args[1] );
+        int bitsPerComponent = Integer.valueOf( args[2] );
+        int histMode = ( args.length > 3 ) ? Integer.valueOf( args[3] ) : 0;
+        int distMode = ( args.length > 4 ) ? Integer.valueOf( args[4] ) : 0;
+
+        MatchTest.testMatching( sourcePatternFilename, searchCount, bitsPerComponent, histMode, distMode );
     }
 
     public static class Counter {
