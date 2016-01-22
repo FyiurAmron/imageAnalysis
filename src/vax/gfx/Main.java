@@ -29,7 +29,9 @@ public class Main {
         //jf.setLayout( new FlowLayout() );
         boolean histoTest = false;
 
-        args = new String[]{ "img/test2.png", /* "1000" */ "13", "4" }; // TEMP!
+        if ( args.length == 0 ) {
+            args = new String[]{ "img/test2.png", /* "1000" */ "13", "4" }; // TEMP!
+        }
         if ( histoTest ) {
             HistoTest.testHisto( args[0], jp1, jp2, jp3 );
         } else {
