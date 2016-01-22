@@ -3,11 +3,11 @@ package vax.gfx;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.function.IntUnaryOperator;
+import javax.swing.BoxLayout;
+import javax.swing.JFrame;
 import javax.swing.JPanel;
 import static vax.gfx.Main.packRGB;
 
@@ -119,8 +119,18 @@ public class HistoTest {
         }
     }
 
-    public static void testHisto ( String filename, Container container1, Container container2, Container container3 )
+    public static void testHisto ( String filename, JFrame imgFrame, JFrame histoFrame, JFrame controlFrame )
             throws FileNotFoundException, IOException {
+        JPanel histoCP = new JPanel();
+        histoFrame.setContentPane( histoCP );
+        //cp.setBackground( Color.BLACK );
+        histoCP.setLayout( new BoxLayout( histoCP, BoxLayout.Y_AXIS ) );
+        JPanel jp1 = new JPanel(), jp2 = new JPanel(), jp3 = new JPanel();
+        jp2.setBackground( Color.DARK_GRAY );
+        jp3.setBackground( Color.DARK_GRAY );
+        //histoCP.add( jp1 );
+        histoCP.add( jp2 );
+        histoCP.add( jp3 );
         int width, height;
         ByteBuffer bb;
         BufferImage bi;
@@ -210,22 +220,24 @@ public class HistoTest {
         ImageLabel il10 = new ImageLabel( jbi2 );
 
         Component[] imageViews1 = new Component[]{ /* il1, */ il3, il4, il5, il6 };
-        Component[] imageViews2 = new Component[]{ il7, il8, il9/*, il10*/ };
+        Component[] imageViews2 = new Component[]{ il7, il8, il9/* , il10 */ };
         Dimension minSize = new Dimension( 256, 256 );
         il1.setMinimumSize( minSize );
-        container1.add( il1 );
+        imgFrame.setContentPane( il1 );
+        //jp1.add( il1 );
         for( Component c : imageViews1 ) {
             c.setMinimumSize( minSize );
-            container2.add( c );
+            jp2.add( c );
         }
         for( Component c : imageViews2 ) {
             c.setMinimumSize( minSize );
-            container3.add( c );
+            jp3.add( c );
         }
 
         Main.Counter cnt = new Main.Counter();
         JPanel buttonPanel = new JPanel();
-        container3.add( buttonPanel );
+        controlFrame.add( buttonPanel );
+        //container3.add( buttonPanel );
 
         buttonPanel.add( new Main.VaxButton( "reduce bits (shift bits)", (ActionEvent t) -> {
             //ImageAnalysis.maskByteBuffer( bi, imgData, jbi1, 0xFF << cnt.next() );
@@ -382,5 +394,24 @@ public class HistoTest {
             }
         } ) );
 
+        buttonPanel.add( new Main.VaxButton( "select file...", (ActionEvent t) -> {
+            FileDialog fd = new FileDialog( imgFrame, "select image", FileDialog.LOAD );
+            controlFrame.setAlwaysOnTop( true );
+            fd.setVisible( true );
+            String filename2 = fd.getDirectory() + fd.getFile();
+            if ( filename != null ) {
+                try {
+                    testHisto( filename2, imgFrame, histoFrame, controlFrame );
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        } ) );
+        controlFrame.setContentPane( buttonPanel );
+        imgFrame.pack();
+        controlFrame.pack();
+        histoFrame.pack();
+        imgFrame.setLocation( 0, 60 );
+        histoFrame.setLocation( 0, 420 );
     }
 }

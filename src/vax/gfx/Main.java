@@ -10,30 +10,35 @@ import javax.swing.*;
  @author toor
  */
 public class Main {
+    private static JFrame appFrame, controlFrame, histoFrame;
 
     /**
      @param args the command line arguments
      @throws java.lang.Exception
      */
     public static void main ( String[] args ) throws Exception {
-        JFrame jf = new JFrame( "imageAnalysis" );
-        Container cp = jf.getContentPane();
-        //cp.setBackground( Color.BLACK );
-        cp.setLayout( new BoxLayout( cp, BoxLayout.Y_AXIS ) );
-        JPanel jp1 = new JPanel(), jp2 = new JPanel(), jp3 = new JPanel();
-        jp2.setBackground( Color.DARK_GRAY );
-        jp3.setBackground( Color.DARK_GRAY );
-        cp.add( jp1 );
-        cp.add( jp2 );
-        cp.add( jp3 );
-        //jf.setLayout( new FlowLayout() );
         boolean histoTest = false;
 
         if ( args.length == 0 ) {
-            args = new String[]{ "img/test2.png", /* "1000" */ "13", "4" }; // TEMP!
+            histoTest = true;
+            args = new String[]{ "img/test2.png", /* "1000" */ "13", "4" };
         }
         if ( histoTest ) {
-            HistoTest.testHisto( args[0], jp1, jp2, jp3 );
+            appFrame = new JFrame( "imageAnalysis" );
+            controlFrame = new JFrame( "controls" );
+            histoFrame = new JFrame( "histograms" );
+
+            HistoTest.testHisto( args[0], appFrame, histoFrame, controlFrame );
+
+            appFrame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+            appFrame.setVisible( true );
+
+            histoFrame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+            histoFrame.setVisible(true);
+
+            controlFrame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+            controlFrame.setAlwaysOnTop( true );
+            controlFrame.setVisible( true );
         } else {
             if ( args.length < 3 ) {
                 System.out.println( "not enough parameters!" );
@@ -46,9 +51,6 @@ public class Main {
 
             MatchTest.testMatching( sourcePatternFilename, searchCount, bitsPerComponent );
         }
-        jf.pack();
-        jf.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-        jf.setVisible( true );
     }
 
     public static class Counter {
