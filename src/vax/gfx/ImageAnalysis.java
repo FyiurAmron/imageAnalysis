@@ -1,5 +1,6 @@
 package vax.gfx;
 
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import static vax.gfx.Main.packRGB;
@@ -72,23 +73,94 @@ public class ImageAnalysis {
     }
 
     public static class Histogram {
-        public static double[] calcHistogram3 ( ByteBuffer bb, double[] output, int scanLength, int[] helper ) {
+        /**
+         output length is 3 dim, so == value range^3
+
+         @param bb
+         @param output
+         @param scanLength
+         @param rawCountOutput
+         @return
+         */
+        public static double[] calcHistogram3 ( ByteBuffer bb, double[] output, int scanLength, int[] rawCountOutput ) {
             bb.rewind();
             int total = bb.remaining();
-            HistoTest.fill( helper, 0 );
+            HistoTest.fill( rawCountOutput, 0 );
             int scanLengthSq = scanLength * scanLength;
 
             for( int i = 0; i < total; i += 3 ) {
                 int a = Byte.toUnsignedInt( bb.get() ),
                         b = Byte.toUnsignedInt( bb.get() ),
                         c = Byte.toUnsignedInt( bb.get() ); // RGB actually
-                helper[a + scanLength * b + scanLengthSq * c]++;
+                rawCountOutput[a + scanLength * b + scanLengthSq * c]++;
             }
             double invTotal = 1.0f / total;
-            for( int i = helper.length - 1; i > 0; i-- ) {
-                output[i] = helper[i] * invTotal;
+            for( int i = rawCountOutput.length - 1; i > 0; i-- ) {
+                output[i] = rawCountOutput[i] * invTotal;
             }
             return output;
+        }
+
+        /**
+         output length is 3 dim, so == value range^3
+
+         @param bb
+         @param output
+         @param scanLength
+         @param rawCountOutput
+         @return
+         */
+        public static double[] calcHistogramHSB3 ( ByteBuffer bb, double[] output, int scanLength, int[] rawCountOutput ) {
+            bb.rewind();
+            int total = bb.remaining();
+            HistoTest.fill( rawCountOutput, 0 );
+            int scanLengthSq = scanLength * scanLength;
+            float[] hsb = new float[3];
+
+            for( int i = 0; i < total; i += 3 ) {
+                int a = Byte.toUnsignedInt( bb.get() ),
+                        b = Byte.toUnsignedInt( bb.get() ),
+                        c = Byte.toUnsignedInt( bb.get() ); // RGB actually
+                Color.RGBtoHSB( a, b, c, hsb );
+                rawCountOutput[(int) ( hsb[0] * 255 ) + (int) ( scanLength * hsb[1] * 255 ) + (int) ( scanLengthSq * hsb[2] * 255 )]++;
+            }
+            double invTotal = 1.0f / total;
+            for( int i = rawCountOutput.length - 1; i > 0; i-- ) {
+                output[i] = rawCountOutput[i] * invTotal;
+            }
+            return output;
+        }
+
+        /**
+         output length is 1 dim only, == value range
+
+         @param bb
+         @param output
+         @param rawCountOutput
+         @return
+         */
+        public static double[] calcHistogramHSB3 ( ByteBuffer bb, double[] output, int[] rawCountOutput ) {
+            bb.rewind();
+            int total = bb.remaining();
+            HistoTest.fill( rawCountOutput, 0 );
+            float[] hsb = new float[3];
+
+            for( int i = 0; i < total; i += 3 ) {
+                int a = Byte.toUnsignedInt( bb.get() ),
+                        b = Byte.toUnsignedInt( bb.get() ),
+                        c = Byte.toUnsignedInt( bb.get() ); // RGB actually
+                Color.RGBtoHSB( a, b, c, hsb );
+                output[(int) ( hsb[0] * 255 )]++;
+            }
+            double invTotal = 1.0f / total;
+            for( int i = rawCountOutput.length - 1; i > 0; i-- ) {
+                output[i] = rawCountOutput[i] * invTotal;
+            }
+            return output;
+        }
+
+        private Histogram () {
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -147,11 +219,15 @@ public class ImageAnalysis {
                 double d8 = 8.0f * d;
                 for( int c = 0; c < maxFeatureValue; ++c ) {
                     if ( histogram[c] > 0 ) {
-                        correlogram[c + di * N_DIST] = (double) Math.floor( 16 * ( correlogram[c + di * N_DIST] / ( histogram[c] * d8 ) ) );
+                        correlogram[c + di * N_DIST] = Math.floor( 16 * ( correlogram[c + di * N_DIST] / ( histogram[c] * d8 ) ) );
                     }
                 }
             }
             return correlogram;
+        }
+
+        private Correlogram () {
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -179,7 +255,7 @@ public class ImageAnalysis {
                 f *= f;
                 dist += f;
             }
-            return (double) Math.sqrt( dist );
+            return Math.sqrt( dist );
         }
 
         // note: not a "real" distance
@@ -194,7 +270,7 @@ public class ImageAnalysis {
                 v1len += v1[i] * v1[i];
                 v2len += v2[i] * v2[i];
             }
-            return 1.0f - dist / (double) Math.sqrt( v1len * v2len );
+            return 1.0f - dist / Math.sqrt( v1len * v2len );
         }
 
         public static double calcIntersection ( double[] v1, double[] v2 ) {
@@ -256,14 +332,18 @@ public class ImageAnalysis {
             return dist;
         }
 
-        public static final double LN_2 = (double) Math.log( 2 );
+        public static final double LN_2 = Math.log( 2 );
 
         public static double log2 ( double f ) {
-            return (double) Math.log( f ) / LN_2;
+            return Math.log( f ) / LN_2;
         }
 
         private Distance () {
             throw new UnsupportedOperationException();
         }
+    }
+
+    private ImageAnalysis () {
+        throw new UnsupportedOperationException();
     }
 }
