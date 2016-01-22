@@ -2,10 +2,7 @@ package vax.gfx;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.image.*;
-import java.nio.ByteBuffer;
 import java.util.function.Consumer;
-import java.util.function.IntUnaryOperator;
 import javax.swing.*;
 
 /**
@@ -30,13 +27,12 @@ public class Main {
         cp.add( jp2 );
         cp.add( jp3 );
         //jf.setLayout( new FlowLayout() );
-        boolean histoTest = true;
+        boolean histoTest = false;
 
+        args = new String[]{ "img/test2.png", /* "1000" */ "13", "4" }; // TEMP!
         if ( histoTest ) {
-            HistoTest.testHisto( jp1, jp2, jp3 );
+            HistoTest.testHisto( args[0], jp1, jp2, jp3 );
         } else {
-            args = new String[]{ "img/0001.png", /* "1000" */ "13", "4" }; // TEMP!
-
             if ( args.length < 3 ) {
                 System.out.println( "not enough parameters!" );
                 return;
@@ -68,60 +64,6 @@ public class Main {
             i++;
             return i;
         }
-    }
-
-    public static BufferedImage toBufferedImage ( BufferImage bi, BufferedImage jbi, int[] tempBuffer ) {
-        ByteBuffer bb = bi.buffer;
-        bb.rewind();
-        for( int i = 0, max = tempBuffer.length; i < max; i++ ) {
-            byte r = bb.get(), g = bb.get(), b = bb.get();
-            tempBuffer[i] = packRGB( r, g, b );
-        }
-        jbi.setRGB( 0, 0, bi.width, bi.height, tempBuffer, 0, bi.width );
-        return jbi;
-    }
-
-    public static BufferedImage toBufferedImageMask ( BufferImage bi, int[] tempBuffer, BufferedImage jbi, int mask ) {
-        ByteBuffer bb = bi.buffer;
-        bb.rewind();
-        for( int i = 0, max = tempBuffer.length; i < max; i++ ) {
-            byte r = (byte) ( bb.get() & mask ), g = (byte) ( bb.get() & mask ), b = (byte) ( bb.get() & mask );
-            tempBuffer[i] = packRGB( r, g, b );
-        }
-        jbi.setRGB( 0, 0, bi.width, bi.height, tempBuffer, 0, bi.width );
-        return jbi;
-    }
-
-    public static BufferedImage maskByteBuffer ( BufferImage bi, int[] tempBuffer, BufferedImage jbi, int mask ) {
-        return maskByteBuffer( bi, tempBuffer, jbi, (a, b, c) -> a & mask, (a, b, c) -> b & mask, (a, b, c) -> c & mask );
-    }
-
-    public interface IntTripletFunction {
-        int accept ( int a, int b, int c );
-    }
-
-    public static BufferedImage maskByteBuffer ( BufferImage bi, int[] tempBuffer, BufferedImage jbi,
-            IntTripletFunction tripR, IntTripletFunction tripG, IntTripletFunction tripB ) {
-        ByteBuffer bb = bi.buffer;
-        bb.rewind();
-        for( int i = 0, max = bb.remaining() / 3; i < max; i++ ) {
-            int pos = bb.position();
-
-            byte r = bb.get(),
-                    g = bb.get(),
-                    b = bb.get();
-            int iR = Byte.toUnsignedInt( r ), iG = Byte.toUnsignedInt( g ), iB = Byte.toUnsignedInt( b );
-            r = (byte) tripR.accept( iR, iG, iB );
-            g = (byte) tripG.accept( iR, iG, iB );
-            b = (byte) tripB.accept( iR, iG, iB );
-            bb.position( pos );
-            bb.put( r );
-            bb.put( g );
-            bb.put( b );
-            tempBuffer[i] = packRGB( r, g, b );
-        }
-        jbi.setRGB( 0, 0, bi.width, bi.height, tempBuffer, 0, bi.width );
-        return jbi;
     }
 
     public static class VaxButton extends JButton {

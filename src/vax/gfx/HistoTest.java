@@ -7,10 +7,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.function.IntConsumer;
-import java.util.function.IntFunction;
 import java.util.function.IntUnaryOperator;
-import jdk.nashorn.internal.objects.NativeDate;
+import javax.swing.JPanel;
 import static vax.gfx.Main.packRGB;
 
 /**
@@ -79,11 +77,11 @@ public class HistoTest {
             return counterMax;
         }
 
-        public float[] getProbabilityDistribution () {
-            return getProbabilityDistribution( new float[valueCounter.length] );
+        public double[] getProbabilityDistribution () {
+            return getProbabilityDistribution( new double[valueCounter.length] );
         }
 
-        public float[] getProbabilityDistribution ( float[] target ) {
+        public double[] getProbabilityDistribution ( double[] target ) {
             for( int i = valueCounter.length - 1; i > 0; i-- ) {
                 target[i] = valueCounter[i] / valueCount;
             }
@@ -121,17 +119,25 @@ public class HistoTest {
         }
     }
 
-    public static void testHisto ( Container container1, Container container2, Container container3 )
+    public static void testHisto ( String filename, Container container1, Container container2, Container container3 )
             throws FileNotFoundException, IOException {
-        PNG.Decoder dec = new PNG.Decoder( new FileInputStream( "img/0001.png" ) );
-        int width = dec.getWidth(), height = dec.getHeight();
-        BufferImage bi = new BufferImage( width, height, dec.getBytesPerPixel() );
-        ByteBuffer bb = bi.buffer;
-        //IntBuffer ib = bb.asIntBuffer();
-        dec.decode( bb, width * 3, PNG.Format.RGB );
+        int width, height;
+        ByteBuffer bb;
+        BufferImage bi;
+        PNG.Decoder dec;
+        try ( FileInputStream fis = new FileInputStream( filename ) ) {
+            dec = new PNG.Decoder( fis );
+            width = dec.getWidth();
+            height = dec.getHeight();
+            bi = new BufferImage( width, height, dec.getBytesPerPixel() );
+            bb = bi.buffer;
+            //IntBuffer ib = bb.asIntBuffer();
+            dec.decode( bb, width * 3, PNG.Format.RGB );
+        }
         bb.rewind();
         int[] imgData = new int[width * height];
         int[] imgDataHSV = new int[width * height];
+        int[] imgDataCorrel = new int[width * height];
         float[] hsb = new float[3];
         //HistoImage histoRGB = new HistoImage();
         HistoImage histoR = new HistoImage( ( 0xFF << 16 ) | ( 0xFF << 24 ) );
@@ -176,10 +182,19 @@ public class HistoTest {
         histoV.updateImage();
 
         BufferedImage jbi1 = new BufferedImage( width, height, BufferedImage.TYPE_3BYTE_BGR );
-        //BufferedImage jbi2 = new BufferedImage( width, height, BufferedImage.TYPE_3BYTE_BGR );
+        BufferedImage jbi2 = new BufferedImage( width, height, BufferedImage.TYPE_3BYTE_BGR );
 
         jbi1.setRGB( 0, 0, dec.getWidth(), dec.getHeight(), imgData, 0, width );
-        //jbi2.setRGB( 0, 0, dec.getWidth(), dec.getHeight(), imgDataHSV, 0, width );
+        /*
+         int maxValue = 256;
+         double[] corRet = ImageAnalysis.Correlogram.generate( maxValue, bi );
+         maxValue--;
+         for( int i = width * height - 1; i > 0; i-- ) {
+         int light = (byte) ( maxValue * corRet[i] );
+         imgDataCorrel[i] = ( 0xFF << 24 ) | ( light << 16 ) | ( light << 8 ) | ( light );
+         }
+         jbi2.setRGB( 0, 0, dec.getWidth(), dec.getHeight(), imgDataCorrel, 0, width );
+         */
 
         ImageLabel il1 = new ImageLabel( jbi1 );
         //ImageLabel il2 = new ImageLabel( jbi2 );
@@ -192,9 +207,10 @@ public class HistoTest {
         ImageLabel il7 = histoH.getImageLabel();
         ImageLabel il8 = histoS.getImageLabel();
         ImageLabel il9 = histoV.getImageLabel();
+        ImageLabel il10 = new ImageLabel( jbi2 );
 
         Component[] imageViews1 = new Component[]{ /* il1, */ il3, il4, il5, il6 };
-        Component[] imageViews2 = new Component[]{ il7, il8, il9 };
+        Component[] imageViews2 = new Component[]{ il7, il8, il9/*, il10*/ };
         Dimension minSize = new Dimension( 256, 256 );
         il1.setMinimumSize( minSize );
         container1.add( il1 );
@@ -208,9 +224,15 @@ public class HistoTest {
         }
 
         Main.Counter cnt = new Main.Counter();
+        JPanel buttonPanel = new JPanel();
+        container3.add( buttonPanel );
 
-        container2.add( new Main.VaxButton( "reduce bits", (ActionEvent t) -> {
-            Main.maskByteBuffer( bi, imgData, jbi1, 0xFF << cnt.next() );
+        buttonPanel.add( new Main.VaxButton( "reduce bits (shift bits)", (ActionEvent t) -> {
+            //ImageAnalysis.maskByteBuffer( bi, imgData, jbi1, 0xFF << cnt.next() );
+            ImageAnalysis.maskByteBuffer( bi, imgData, jbi1,
+                    (a, b, c) -> a >> 1,
+                    (a, b, c) -> b >> 1,
+                    (a, b, c) -> c >> 1 );
             histoR.reset();
             histoG.reset();
             histoB.reset();
@@ -259,9 +281,59 @@ public class HistoTest {
             }
         } ) );
 
-        container2.add( new Main.VaxButton( "grayscale", (ActionEvent t) -> {
-            Main.IntTripletFunction avg = (a, b, c) -> ( a + b + c ) / 3;
-            Main.maskByteBuffer( bi, imgData, jbi1, avg, avg, avg );
+        buttonPanel.add( new Main.VaxButton( "reduce bits (mask bits)", (ActionEvent t) -> {
+            ImageAnalysis.maskByteBuffer( bi, imgData, jbi1, 0xFF << cnt.next() );
+            histoR.reset();
+            histoG.reset();
+            histoB.reset();
+            histoGray.reset();
+            histoH.reset();
+            histoS.reset();
+            histoV.reset();
+            bb.rewind();
+            for( int i = 0, max = imgData.length; i < max; i++ ) {
+                byte r = bb.get(), g = bb.get(), b = bb.get();
+                int iR = Byte.toUnsignedInt( r ), iG = Byte.toUnsignedInt( g ), iB = Byte.toUnsignedInt( b );
+                histoR.count( iR );
+                histoG.count( iG );
+                histoB.count( iB );
+                histoGray.count( ( iR + iG + iB ) / 3 );
+                imgData[i] = packRGB( r, g, b );
+                Color.RGBtoHSB( iR, iG, iB, hsb );
+                histoH.count( (int) ( hsb[0] * 255 ) );
+                histoS.count( (int) ( hsb[1] * 255 ) );
+                histoV.count( (int) ( hsb[2] * 255 ) );
+                //hsb[0] = 0;
+                //hsb[1] = 0;
+                //hsb[2] = 0;
+                /*
+                 imgDataHSV[i] = ( ( (int) ( hsb[0] * 255 ) ) << 16 )
+                 | ( ( (int) ( hsb[1] * 255 ) ) << 8 )
+                 | ( (int) ( hsb[2] * 255 ) );
+                 */
+                imgDataHSV[i] = ( ( (int) ( hsb[1] * 255 ) ) & 0xFF );
+            }
+            int cntr = Math.max( histoR.getCounterMax(),
+                    Math.max( histoG.getCounterMax(), histoB.getCounterMax() ) );
+            histoR.updateImage( cntr );
+            histoG.updateImage( cntr );
+            histoB.updateImage( cntr );
+            histoGray.updateImage( cntr );
+            histoH.updateImage();
+            histoS.updateImage();
+            histoV.updateImage();
+            il1.repaint();
+            for( Component c : imageViews1 ) {
+                c.repaint();
+            }
+            for( Component c : imageViews2 ) {
+                c.repaint();
+            }
+        } ) );
+
+        buttonPanel.add( new Main.VaxButton( "grayscale", (ActionEvent t) -> {
+            ImageAnalysis.IntTripletFunction avg = (a, b, c) -> ( a + b + c ) / 3;
+            ImageAnalysis.maskByteBuffer( bi, imgData, jbi1, avg, avg, avg );
             histoR.reset();
             histoG.reset();
             histoB.reset();
